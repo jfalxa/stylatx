@@ -1,0 +1,17 @@
+{
+  "name": "stylatx",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "parcel index.js",
+    "build": "parcel build index.js"
+  },
+  "dependencies": {
+    "hyperapp": "^1.2.8"
+  },
+  "devDependencies": {
+    "babel-preset-stage-0": "^6.24.1",
+    "parcel-bundler": "1.9.7"
+  }
+}
