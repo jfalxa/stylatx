@@ -91,3 +91,26 @@ test('media queries', () => {
 })
 
 
+// not so fast :/
+test('speed test', () => {
+  const ITER = 10000
+
+  for (let i=0; i<ITER; i++) {
+    css({
+      color: 'red',
+      background: 'lightgrey',
+      '.child': {
+        display: 'hidden'
+      },
+      ':hover': {
+        background: 'black',
+        '.child': {
+          display: 'block'
+        }
+      }
+    })
+  }
+
+  expect(document.styleSheets[0].cssRules).toHaveLength(ITER * 4)
+})
+

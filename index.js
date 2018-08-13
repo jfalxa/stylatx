@@ -1,7 +1,7 @@
 // utils
 
-function kebabCase(str = "") {
-  return str.replace(/[A-Z]/g, "-$&").toLowerCase()
+function kebabCase(str = '') {
+  return str.replace(/[A-Z]/g, '-$&').toLowerCase()
 }
 
 function uniq(value, index, arr) {
@@ -9,7 +9,7 @@ function uniq(value, index, arr) {
 }
 
 function isFn(value) {
-  return typeof value === "function"
+  return typeof value === 'function'
 }
 
 function isDef(value) {
@@ -21,7 +21,7 @@ function rid() {
     .toString(36)
     .substring(7)
 
-  return "sx-" + randomString
+  return 'sx-' + randomString
 }
 
 function isEmpty(obj) {
@@ -36,7 +36,7 @@ function cs(...classNames) {
   return classNames
     .filter(isDef)
     .filter(uniq)
-    .join(" ")
+    .join(' ')
 }
 
 
@@ -45,7 +45,7 @@ function cs(...classNames) {
 let stylesheet
 
 function initSheet() {
-  stylesheet = document.createElement("style")
+  stylesheet = document.createElement('style')
   document.head.appendChild(stylesheet)
   return stylesheet
 }
@@ -63,15 +63,15 @@ function parseRules(selector, style, wrapper) {
   Object.keys(style).forEach(prop => {
     const value = style[prop]
 
-    if (typeof value !== "object") {
+    if (typeof value !== 'object') {
       // flat values
       baseRule[1][prop] = value
-    } else if (prop.startsWith("@")) {
+    } else if (prop.startsWith('@')) {
       // media queries
       otherRules.push(...parseRules(selector, value, prop))
     } else if (/^(:|>|\.|\*)/.test(prop)) {
       // nested selector
-      const space = prop[0] === ":" ? "" : " "
+      const space = prop[0] === ':' ? '' : ' '
       otherRules.push(...parseRules(selector + space + prop, value, wrapper))
     }
   })
@@ -84,7 +84,7 @@ function cssDeclaration(selector, rules, wrapper) {
     .filter(prop => rules[prop])
     .map(prop => `${kebabCase(prop)}: ${rules[prop]};`)
 
-  const declaration = `${selector} { ${cssRules.join(" ")} }`
+  const declaration = `${selector} { ${cssRules.join(' ')} }`
   return wrapper ? `${wrapper} { ${declaration} }` : declaration
 }
 
@@ -124,7 +124,7 @@ function css(style, ...extraStyles) {
 
   if (extraStyles.length > 0) {
     return combine(style, ...extraStyles)
-  } else if (typeof style === "string" || style.identifier === identifier) {
+  } else if (typeof style === 'string' || style.identifier === identifier) {
     return style
   } else if (!isFn(style)) {
     return insertRule(className, style)
@@ -156,14 +156,18 @@ function css(style, ...extraStyles) {
 function createStyled(render) {
   return function styled(Component) {
     return (...defs) => {
-      const styles = css(...defs)
+      const className = rid()
+      const styles = css(className, ...defs)
 
-      return (...args) =>
+      const Styled = (...args) =>
         render(
           Component,
           applyArgsToStyle(args, styles),
           ...args
         )
+
+      Styled.toString = () => className
+      return Styled
     }
   }
 }
