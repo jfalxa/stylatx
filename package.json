@@ -5,13 +5,15 @@
   "main": "dist/index.js",
   "scripts": {
     "start": "parcel index.js",
-    "build": "parcel build index.js"
+    "build": "parcel build index.js",
+    "test": "jest"
   },
   "dependencies": {
     "hyperapp": "^1.2.8"
   },
   "devDependencies": {
     "babel-preset-stage-0": "^6.24.1",
+    "jest": "^23.5.0",
     "parcel-bundler": "1.9.7"
   }
 }

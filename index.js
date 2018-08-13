@@ -1,168 +1,171 @@
 // utils
 
 function kebabCase(str = "") {
-  return str.replace(/[A-Z]/g, "-$&").toLowerCase();
+  return str.replace(/[A-Z]/g, "-$&").toLowerCase()
 }
 
 function uniq(value, index, arr) {
-  return arr.lastIndexOf(value) === index;
+  return arr.lastIndexOf(value) === index
 }
 
 function isFn(value) {
-  return typeof value === "function";
+  return typeof value === "function"
 }
 
 function isDef(value) {
-  return value === 0 || Boolean(value);
+  return value === 0 || Boolean(value)
 }
 
 function rid() {
   const randomString = Math.random()
     .toString(36)
-    .substring(7);
+    .substring(7)
 
-  return "c-" + randomString;
+  return "sx-" + randomString
 }
 
 function isEmpty(obj) {
-  return !Object.values(obj).some(isDef);
+  return !Object.values(obj).some(isDef)
 }
 
 function applyArgsToStyle(args, style) {
-  return isFn(style) ? style(...args) : style;
+  return isFn(style) ? style(...args) : style
 }
 
 function cs(...classNames) {
   return classNames
     .filter(isDef)
     .filter(uniq)
-    .join(" ");
+    .join(" ")
 }
 
 
 // rules
 
-let stylesheet;
+let stylesheet
 
 function initSheet() {
-  stylesheet = document.createElement("style");
-  document.head.appendChild(stylesheet);
-  return stylesheet;
+  stylesheet = document.createElement("style")
+  document.head.appendChild(stylesheet)
+  return stylesheet
 }
 
 function getSheet() {
   return !stylesheet || !stylesheet.sheet
     ? initSheet().sheet
-    : stylesheet.sheet;
+    : stylesheet.sheet
 }
 
 function parseRules(selector, style, wrapper) {
-  const baseRule = [selector, {}, wrapper];
-  const otherRules = [];
+  const baseRule = [selector, {}, wrapper]
+  const otherRules = []
 
   Object.keys(style).forEach(prop => {
-    const value = style[prop];
+    const value = style[prop]
 
     if (typeof value !== "object") {
       // flat values
-      baseRule[1][prop] = value;
+      baseRule[1][prop] = value
     } else if (prop.startsWith("@")) {
       // media queries
-      otherRules.push(...parseRules(selector, value, prop));
+      otherRules.push(...parseRules(selector, value, prop))
     } else if (/^(:|>|\.|\*)/.test(prop)) {
       // nested selector
-      const space = prop[0] === ":" ? "" : " ";
-      otherRules.push(...parseRules(selector + space + prop, value, wrapper));
+      const space = prop[0] === ":" ? "" : " "
+      otherRules.push(...parseRules(selector + space + prop, value, wrapper))
     }
-  });
+  })
 
-  return [baseRule, ...otherRules].filter(rule => !isEmpty(rule[1]));
+  return [baseRule, ...otherRules].filter(rule => !isEmpty(rule[1]))
 }
 
 function cssDeclaration(selector, rules, wrapper) {
   const cssRules = Object.keys(rules)
     .filter(prop => rules[prop])
-    .map(prop => `${kebabCase(prop)}: ${rules[prop]};`);
+    .map(prop => `${kebabCase(prop)}: ${rules[prop]};`)
 
-  const declaration = `${selector} { ${cssRules.join(" ")} }`;
-  return wrapper ? `${wrapper} { ${declaration} }` : declaration;
+  const declaration = `${selector} { ${cssRules.join(" ")} }`
+  return wrapper ? `${wrapper} { ${declaration} }` : declaration
 }
 
 function insertRule(className, style) {
-  const selector = `.${className}`;
-  const sheet = getSheet();
-  const last = () => sheet.cssRules.length;
+  const selector = `.${className}`
+  const sheet = getSheet()
+  const last = () => sheet.cssRules.length
 
   parseRules(selector, style)
     .map(rule => cssDeclaration(...rule))
-    .forEach(declaration => sheet.insertRule(declaration, last()));
+    .forEach(declaration => sheet.insertRule(declaration, last()))
 
-  return className;
+  return className
 }
 
 
 // css
 
-const identifier = Symbol();
+const identifier = Symbol()
 
-function combine(className, defs) {
-  const styles = defs.map(style => css(className, style));
+function combine(...defs) {
+  const styles = defs.map(style => css(style))
 
-  const wrapper = (...args) =>
-    cs(className, ...styles.map(style => applyArgsToStyle(args, style)));
-
-  wrapper.identifier = identifier;
-  return wrapper;
-}
-
-function css(className = rid(), style, ...extraStyles) {
-  if (extraStyles.length > 0) {
-    return combine(className, [style, ...extraStyles]);
-  } else if (typeof style === "string" || style.identifier === identifier) {
-    return style;
-  } else if (!isFn(style)) {
-    return insertRule(className, style);
+  if (!styles.some(isFn)) {
+    return cs(...styles)
   }
 
-  const cache = {};
+  const wrapper = (...args) =>
+    cs(...styles.map(style => applyArgsToStyle(args, style)))
+
+  wrapper.identifier = identifier
+  return wrapper
+}
+
+function css(style, ...extraStyles) {
+  const className = rid()
+
+  if (extraStyles.length > 0) {
+    return combine(style, ...extraStyles)
+  } else if (typeof style === "string" || style.identifier === identifier) {
+    return style
+  } else if (!isFn(style)) {
+    return insertRule(className, style)
+  }
+
+  const cache = {}
 
   const applyStyle = (...args) => {
-    const computedStyle = style(...args);
-    const key = JSON.stringify(computedStyle);
+    const computedStyle = style(...args)
+    const key = JSON.stringify(computedStyle)
 
     if (!cache[key]) {
-      const version = Object.keys(cache).length;
-      const name = version > 0 ? `${className}-${version}` : className;
-      cache[key] = insertRule(name, computedStyle);
+      const version = Object.keys(cache).length
+      const name = version > 0 ? `${className}-${version}` : className
+      cache[key] = insertRule(name, computedStyle)
     }
 
-    return cache[key];
-  };
+    return cache[key]
+  }
 
-  applyStyle.identifier = identifier;
-  applyStyle({}); // create default style with no params
-  return applyStyle;
+  applyStyle.identifier = identifier
+  applyStyle({}) // create default style with no params
+  return applyStyle
 }
 
 
 // create styled
 
 function createStyled(render) {
-  return function styled(Component, className = rid()) {
+  return function styled(Component) {
     return (...defs) => {
-      const styles = css(className, ...defs);
+      const styles = css(...defs)
 
-      const StyledComponent = (...args) =>
+      return (...args) =>
         render(
           Component,
-          cs(className, applyArgsToStyle(args, styles)),
+          applyArgsToStyle(args, styles),
           ...args
-        );
-
-      StyledComponent.toString = () => `.${className}`;
-      return StyledComponent;
-    };
-  };
+        )
+    }
+  }
 }
 
-module.exports = { createStyled, css, cs };
+module.exports = { createStyled, css, cs }
